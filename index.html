@@ -13,12 +13,12 @@
 </head>
 <body>
   <h1>Anticipation Timer Test</h1>
-  <p>Instructions: You will see a red dot move across the screen toward a green line. Press the spacebar at the exact moment you think the red dot reaches the green line. You will complete three trials: one slow, one medium, and one fast.</p>
+  <p>Instructions: You will see a red dot move toward the green line. Press the spacebar at the moment you think it reaches the line. You will complete three fast trials.</p>
   <div id="track">
     <div id="dot"></div>
     <div id="target"></div>
   </div>
-  <button onclick="startTrial()">Start Trial</button>
+  <button onclick="startTrial()" id="startButton">Start Trial</button>
   <p id="result"></p>
   <p id="trialInfo"></p>
   <p id="allResults"></p>
@@ -28,28 +28,33 @@
     const result = document.getElementById('result');
     const trialInfo = document.getElementById('trialInfo');
     const allResults = document.getElementById('allResults');
+    const startButton = document.getElementById('startButton');
+
     const trackWidth = 600;
     const dotWidth = 20;
     const targetX = 550;
 
     let animation, startTime, expectedTime;
     let currentTrial = 0;
-    const durations = [5000, 3000, 1500]; // slow, medium, fast in ms
-    const trialLabels = ['Slow', 'Medium', 'Fast'];
+    const totalTrials = 3;
+    const duration = 1500; // all trials are fast (1500 ms)
     const errors = [];
 
     function startTrial() {
-      if (currentTrial >= durations.length) {
+      if (currentTrial >= totalTrials) {
         trialInfo.textContent = 'All trials completed. See your results below:';
-        allResults.innerHTML = errors.map((e, i) => `${trialLabels[i]} Trial: ${Math.abs(e).toFixed(2)} ms ${e > 0 ? 'late' : 'early'}`).join('<br>');
+        allResults.innerHTML = errors.map((e, i) => 
+          `Trial ${i + 1}: ${Math.abs(e).toFixed(2)} ms ${e > 0 ? 'late' : 'early'}`
+        ).join('<br>');
+        startButton.disabled = false;
+        currentTrial = 0;
         return;
       }
 
+      startButton.disabled = true;
       dot.style.left = '0px';
       result.textContent = '';
-      allResults.textContent = '';
-      trialInfo.textContent = `Trial ${currentTrial + 1} of 3 - ${trialLabels[currentTrial]} speed`;
-      let duration = durations[currentTrial];
+      trialInfo.textContent = `Trial ${currentTrial + 1} of ${totalTrials}`;
       let start = null;
 
       function move(timestamp) {
@@ -67,7 +72,11 @@
           animation = requestAnimationFrame(move);
         } else {
           cancelAnimationFrame(animation);
-          currentTrial++;
+          // Wait a bit before the next trial
+          setTimeout(() => {
+            currentTrial++;
+            startTrial();
+          }, 1000); // 1 second break between trials
         }
       }
 
@@ -75,17 +84,14 @@
     }
 
     document.addEventListener('keydown', function(e) {
-      if (e.code === 'Space') {
+      if (e.code === 'Space' && expectedTime) {
         let responseTime = performance.now();
-        if (expectedTime) {
-          let error = responseTime - expectedTime;
-          result.textContent = `You pressed the spacebar ${Math.abs(error).toFixed(2)} ms ${error > 0 ? 'late' : 'early'}.`;
-          errors[currentTrial] = error;
-          expectedTime = null; // prevent multiple presses
-        }
+        let error = responseTime - expectedTime;
+        result.textContent = `You pressed the spacebar ${Math.abs(error).toFixed(2)} ms ${error > 0 ? 'late' : 'early'}.`;
+        errors[currentTrial] = error;
+        expectedTime = null; // prevent multiple keypresses
       }
     });
   </script>
 </body>
 </html>
-
