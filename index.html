@@ -1,1 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Anticipation Timer Test</title>
+  <style>
+    body { text-align: center; font-family: sans-serif; margin-top: 50px; }
+    #track { position: relative; width: 600px; height: 30px; background: #eee; margin: 20px auto; border: 1px solid #ccc; }
+    #dot { position: absolute; width: 20px; height: 20px; background: red; border-radius: 50%; top: 5px; left: 0; }
+    #target { position: absolute; width: 4px; height: 30px; background: green; top: 0; left: 550px; }
+    button { padding: 10px 20px; font-size: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Anticipation Timer Test</h1>
+  <p>Instructions: You will see a red dot move across the screen toward a green line. Press the spacebar at the exact moment you think the red dot reaches the green line. You will complete three trials: one slow, one medium, and one fast.</p>
+  <div id="track">
+    <div id="dot"></div>
+    <div id="target"></div>
+  </div>
+  <button onclick="startTrial()">Start Trial</button>
+  <p id="result"></p>
+  <p id="trialInfo"></p>
+  <p id="allResults"></p>
+
+  <script>
+    const dot = document.getElementById('dot');
+    const result = document.getElementById('result');
+    const trialInfo = document.getElementById('trialInfo');
+    const allResults = document.getElementById('allResults');
+    const trackWidth = 600;
+    const dotWidth = 20;
+    const targetX = 550;
+
+    let animation, startTime, expectedTime;
+    let currentTrial = 0;
+    const durations = [5000, 3000, 1500]; // slow, medium, fast in ms
+    const trialLabels = ['Slow', 'Medium', 'Fast'];
+    const errors = [];
+
+    function startTrial() {
+      if (currentTrial >= durations.length) {
+        trialInfo.textContent = 'All trials completed. See your results below:';
+        allResults.innerHTML = errors.map((e, i) => `${trialLabels[i]} Trial: ${Math.abs(e).toFixed(2)} ms ${e > 0 ? 'late' : 'early'}`).join('<br>');
+        return;
+      }
+
+      dot.style.left = '0px';
+      result.textContent = '';
+      allResults.textContent = '';
+      trialInfo.textContent = `Trial ${currentTrial + 1} of 3 - ${trialLabels[currentTrial]} speed`;
+      let duration = durations[currentTrial];
+      let start = null;
+
+      function move(timestamp) {
+        if (!start) {
+          start = timestamp;
+          startTime = performance.now();
+          expectedTime = startTime + duration * (targetX / (trackWidth - dotWidth));
+        }
+        let elapsed = timestamp - start;
+        let progress = elapsed / duration;
+        let position = Math.min(progress * (trackWidth - dotWidth), trackWidth - dotWidth);
+        dot.style.left = position + 'px';
+
+        if (position < targetX) {
+          animation = requestAnimationFrame(move);
+        } else {
+          cancelAnimationFrame(animation);
+          currentTrial++;
+        }
+      }
+
+      animation = requestAnimationFrame(move);
+    }
+
+    document.addEventListener('keydown', function(e) {
+      if (e.code === 'Space') {
+        let responseTime = performance.now();
+        if (expectedTime) {
+          let error = responseTime - expectedTime;
+          result.textContent = `You pressed the spacebar ${Math.abs(error).toFixed(2)} ms ${error > 0 ? 'late' : 'early'}.`;
+          errors[currentTrial] = error;
+          expectedTime = null; // prevent multiple presses
+        }
+      }
+    });
+  </script>
+</body>
+</html>
 
